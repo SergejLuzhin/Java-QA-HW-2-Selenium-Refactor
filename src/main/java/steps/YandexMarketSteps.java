@@ -2,7 +2,6 @@ package steps;
 
 import entity.Product;
 import helpers.Driver;
-import helpers.Scroller;
 import helpers.SoftChecker;
 import io.qameta.allure.Step;
 import org.junit.jupiter.api.Assertions;
@@ -71,8 +70,9 @@ public class YandexMarketSteps {
 
     /**
      * Получает все карточки товаров на странице,
-     * скроллит страницу вниз и вверх, для прогрузки всех карточек,
-     * а затем сохраняет каждый товар в сущность Product.
+     * скроллит страницу вниз, для прогрузки всех карточек,
+     * а затем сохраняет каждый товар в сущность Product,
+     * и передает его в список товаров на странице.
      *
      * @param ymPage объект страницы Яндекс Маркета
      *
@@ -80,15 +80,7 @@ public class YandexMarketSteps {
      */
     @Step("Получаем список всех карточек товаров на странице")
     public static void getAllProductCards(YandexMarketPage ymPage) {
-        //Scroller.scrollToBottomOfPage();
-        //Scroller.scrollToTopOfPage();
-        //List<WebElement> productCards = ymPage.scrollToBottomAndCollectAllProducts();
         ymPage.scrollToBottomAndCollectAllProducts();
-
-       /* for (WebElement productCard : productCards) {
-            //System.out.println(productCard.toString());
-            Product.saveProductFromElement(productCard, ymPage);
-        }*/
     }
 
     /**

@@ -2,10 +2,8 @@ package pages;
 
 import entity.Product;
 import helpers.Driver;
-import io.qameta.allure.Step;
 import org.openqa.selenium.*;
 import org.openqa.selenium.interactions.Actions;
-import org.openqa.selenium.json.JsonOutput;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.util.ArrayList;
@@ -16,6 +14,7 @@ import static org.openqa.selenium.support.ui.ExpectedConditions.visibilityOfElem
 
 import static helpers.Properties.testProperties;
 import static helpers.Properties.xpathProperties;
+import static helpers.PageOffsetLocator.*;
 
 /**
  * Page Object для работы со страницами Яндекс Маркета.
@@ -183,8 +182,9 @@ public class YandexMarketPage {
 
             brandFilterElement.click();
 
+            //Ожидаем прогрузки новых товаров
             try {
-                Thread.sleep(5000);
+                Thread.sleep(testProperties.explicitWaitTimeoutMs());
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
@@ -192,86 +192,61 @@ public class YandexMarketPage {
     }
 
     /**
-     * Возвращает список веб-элементов карточек товаров на текущей странице.
+     * Последовательно прокручивает страницу вниз и собирает все товары,
+     * добавляя их в список {@code productsOnPage}, пока не будет достигнут конец страницы.
      *
-     * @return список WebElement карточек товаров
      *
      * @author Сергей Лужин
      */
-    public List<WebElement> getAllProductCardsOnPage() {
-        return driver.findElements(By.xpath(xpathProperties.ymCardsOnAllPagesXpath()));
-    }
-
     public void scrollToBottomAndCollectAllProducts() {
         JavascriptExecutor js = (JavascriptExecutor) driver;
 
-        int currentLastElementIndex = 0;
         int doubledPositionsCount = 0;
-        boolean isAdded = false;
-        int trueIndex = 0;
+        int trueCurrentIndex = 0;
 
         while (true) {
             try {
-                Thread.sleep(10);
+                Thread.sleep(testProperties.scrollTimeoutMs());
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
 
-            currentLastElementIndex = productsOnPage.size();
-            isAdded = false;
-
-            List<WebElement> productCards =
+            List<WebElement> productElemnets =
                     driver.findElements(By.xpath(xpathProperties.ymCardsOnAllPagesXpath()));
 
-            trueIndex = currentLastElementIndex + doubledPositionsCount;
+            trueCurrentIndex = productsOnPage.size() + doubledPositionsCount;
 
-            if (trueIndex < productCards.size()) {
+            if (trueCurrentIndex < productElemnets.size()) {
                 new Actions(driver)
-                        .moveToElement(productCards.get(trueIndex))
+                        .moveToElement(productElemnets.get(trueCurrentIndex))
                         .perform();
 
-                System.out.println("Пробуем добавить товар под индексом: " + trueIndex);
-                isAdded = Product.saveProductFromElement(productCards.get(trueIndex), this);
+                System.out.println("Пробуем добавить товар под индексом: " + trueCurrentIndex);
+                boolean isAdded = Product.saveProductFromElement(productElemnets.get(trueCurrentIndex), this);
+                System.out.println("На данный момент было добавлено: " + productsOnPage.size() + " товаров");
 
-                currentLastElementIndex++;
-
-                System.out.println("Сейчас в productsOnPage: " + productsOnPage.size() + " товаров");
                 if (!isAdded) {
                     doubledPositionsCount++;
+                    System.out.println("НАЙДЕНА ДУБЛИРОВАННА ПОЗИЦИЯ." +
+                            "Общее количество дублированных позиций: " + doubledPositionsCount);
                 }
-                System.out.println("Количество дублированных позиций: " + doubledPositionsCount);
             }
             else {
-                System.out.println("СКРОЛЛИМ МАНУАЛЬНО");
                 js.executeScript("window.scrollBy(0, arguments[0]);", 500);
             }
 
-            Number offset = (Number) js.executeScript("return window.pageYOffset;");
-            Number window = (Number) js.executeScript("return window.innerHeight;");
-            Number height = (Number) js.executeScript("return document.body.scrollHeight;");
-
-            double currentBottom = offset.doubleValue() + window.doubleValue();
-            double pageHeight = height.doubleValue();
-
-            if (currentBottom >= pageHeight - 50) {
+            if (hasReachedBottomOfPage(js)) {
                 System.out.println("Пытаемся завершить скроллинг, так как был достигнут конец страницы");
 
                 try {
-                    Thread.sleep(10000);
+                    Thread.sleep(testProperties.pageUpdateTimeoutMs());
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
 
-                offset = (Number) js.executeScript("return window.pageYOffset;");
-                window = (Number) js.executeScript("return window.innerHeight;");
-                height = (Number) js.executeScript("return document.body.scrollHeight;");
-
-                currentBottom = offset.doubleValue() + window.doubleValue();
-                pageHeight = height.doubleValue();
-
-                if (currentBottom >= pageHeight - 50) {
-                    System.out.println("Подождали, но страница больше не прогрузилась. ЗАВЕРШАЕМ");
-                    System.out.println("Финальное количество товаров в productsOnPage: " + productsOnPage.size());
+                if (hasReachedBottomOfPage(js)) {
+                    System.out.println("Подождали, страница больше не прогрузилась. ЗАВЕРШАЕМ");
+                    System.out.println("Финальное количество добавленных товаров: " + productsOnPage.size());
                     break;
                 }
                 else {
@@ -284,68 +259,29 @@ public class YandexMarketPage {
     /**
      * Возвращает текст заголовка карточки товара.
      *
-     * @param productElement веб-элемент карточки товара
+     * @param element веб-элемент карточки товара
      * @return название товара
      *
      * @author Сергей Лужин
      */
-    public String getProductCardTitle(WebElement productElement) {
-        By titleLocator = By.xpath(xpathProperties.ymCardTitleAddonXpath());
-
-        WebDriverWait wait = new WebDriverWait(driver, 10); // Selenium 3: timeout в секундах
-
-        // ждём, пока текст в элементе станет НЕ пустым
-        String title = wait.until(d -> {
-            try {
-                WebElement titleElement = productElement.findElement(titleLocator);
-                String text = titleElement.getText();
-                if (text != null && !text.trim().isEmpty()) {
-                    return text;
-                }
-                return null; // продолжаем ждать
-            } catch (StaleElementReferenceException e) {
-                return null; // элемент переотрисовался, ждём ещё
-            }
-        });
-
-        return title.trim();
+    public String getProductCardTitle(WebElement element){
+        WebElement titleElement = element.findElement(By.xpath(xpathProperties.ymCardTitleAddonXpath()));
+        return titleElement.getText();
     }
 
     /**
      * Возвращает числовое значение цены товара из карточки.
      * Очищает текст от пробелов и нецифровых символов перед преобразованием.
      *
-     * @param productElement веб-элемент карточки товара
+     * @param element веб-элемент карточки товара
      * @return цена товара в виде целого числа
      *
      * @author Сергей Лужин
      */
-    public int getProductCardPrice(WebElement productElement) {
-        By priceLocator = By.xpath(xpathProperties.ymCardPriceAddonXpath());
-
-        WebDriverWait wait = new WebDriverWait(driver, 10);
-
-        // ждём, пока удастся вытащить непустую числовую строку
-        String priceText = wait.until(d -> {
-            try {
-                WebElement priceElement = productElement.findElement(priceLocator);
-                String text = priceElement.getText();
-                if (text == null) {
-                    return null;
-                }
-
-                String digits = text.replaceAll("[^0-9]", "");
-                if (digits.isEmpty()) {
-                    return null; // ждём дальше
-                }
-
-                return digits;
-            } catch (StaleElementReferenceException e) {
-                return null;
-            }
-        });
-
-        return Integer.parseInt(priceText);
+    public int getProductCardPrice(WebElement element) {
+        return Integer.parseInt(element.findElement(By.xpath(xpathProperties.ymCardPriceAddonXpath())).getText()
+                .replaceAll("[\\s\\u00A0\\u2006\\u2007\\u2008\\u2009\\u200A]", "")
+                .replaceAll("[^\\d]", ""));
     }
 }
 
