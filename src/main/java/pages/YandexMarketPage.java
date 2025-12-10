@@ -2,6 +2,7 @@ package pages;
 
 import entity.Product;
 import helpers.Driver;
+import helpers.PageOffsetLocator;
 import org.openqa.selenium.*;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.WebDriverWait;
@@ -205,12 +206,6 @@ public class YandexMarketPage {
         int trueCurrentIndex = 0;
 
         while (true) {
-            try {
-                Thread.sleep(testProperties.scrollTimeoutMs());
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-
             List<WebElement> productElemnets =
                     driver.findElements(By.xpath(xpathProperties.ymCardsOnAllPagesXpath()));
 
@@ -238,13 +233,9 @@ public class YandexMarketPage {
             if (hasReachedBottomOfPage(js)) {
                 System.out.println("Пытаемся завершить скроллинг, так как был достигнут конец страницы");
 
-                try {
-                    Thread.sleep(testProperties.pageUpdateTimeoutMs());
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
+                boolean stillAtBottom = isStillAtBottomAfterWait(js, driver);
 
-                if (hasReachedBottomOfPage(js)) {
+                if (stillAtBottom) {
                     System.out.println("Подождали, страница больше не прогрузилась. ЗАВЕРШАЕМ");
                     System.out.println("Финальное количество добавленных товаров: " + productsOnPage.size());
                     break;
@@ -265,8 +256,24 @@ public class YandexMarketPage {
      * @author Сергей Лужин
      */
     public String getProductCardTitle(WebElement element){
-        WebElement titleElement = element.findElement(By.xpath(xpathProperties.ymCardTitleAddonXpath()));
-        return titleElement.getText();
+        WebDriverWait wait = new WebDriverWait(
+                driver,
+                testProperties.defaultTimeout()
+        );
+
+        try {
+            return wait.until(d -> {
+                WebElement titleElement =
+                        element.findElement(By.xpath(xpathProperties.ymCardTitleAddonXpath()));
+
+                String text = titleElement.getText().trim();
+                // если текст пустой — возвращаем null, WebDriverWait продолжит ждать
+                return text.isEmpty() ? null : text;
+            });
+        } catch (TimeoutException e) {
+            System.out.println("[WAIT] Заголовок товара не стал непустым за отведённое время");
+            return "";
+        }
     }
 
     /**
@@ -279,9 +286,32 @@ public class YandexMarketPage {
      * @author Сергей Лужин
      */
     public int getProductCardPrice(WebElement element) {
-        return Integer.parseInt(element.findElement(By.xpath(xpathProperties.ymCardPriceAddonXpath())).getText()
-                .replaceAll("[\\s\\u00A0\\u2006\\u2007\\u2008\\u2009\\u200A]", "")
-                .replaceAll("[^\\d]", ""));
+        WebDriverWait wait = new WebDriverWait(
+                driver,
+                testProperties.defaultTimeout()
+        );
+
+        try {
+            return wait.until(d -> {
+                WebElement titleElement =
+                        element.findElement(By.xpath(xpathProperties.ymCardPriceAddonXpath()));
+
+                String text = titleElement.getText();
+
+                if (text.isEmpty()){
+                    return null;
+                }
+                else {
+                    return Integer.parseInt(text
+                            .replaceAll("[\\s\\u00A0\\u2006\\u2007\\u2008\\u2009\\u200A]", "")
+                            .replaceAll("[^\\d]", ""));
+                }
+            });
+        } catch (TimeoutException e) {
+            System.out.println("[WAIT] Цена товара не стала непустой за отведённое время");
+            return 0;
+        }
+
     }
 }
 

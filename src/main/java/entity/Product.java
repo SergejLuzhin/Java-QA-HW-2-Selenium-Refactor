@@ -73,7 +73,7 @@ public class Product {
 
         Product candidate = new Product(productTitle, productPrice);
 
-        if (!ymPage.productsOnPage.contains(candidate)) {
+        if (!ymPage.productsOnPage.contains(candidate) && !productTitle.isEmpty() && productPrice != 0) {
             ymPage.productsOnPage.add(candidate);
             System.out.println("Добавили: " + candidate.getTitle());
             return true;

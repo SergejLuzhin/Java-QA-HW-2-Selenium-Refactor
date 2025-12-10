@@ -1,6 +1,11 @@
 package helpers;
 
 import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.TimeoutException;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.support.ui.WebDriverWait;
+
+import static helpers.Properties.testProperties;
 
 /**
  * Утилитный класс для определения текущего положения страницы
@@ -28,5 +33,24 @@ public class PageOffsetLocator {
         double pageHeight = height.doubleValue();
 
         return  (currentBottom >= pageHeight - 50);
+    }
+
+    public static boolean isStillAtBottomAfterWait(JavascriptExecutor js, WebDriver driver) {
+        WebDriverWait wait = new WebDriverWait(
+                driver,
+                testProperties.defaultTimeout()
+        );
+
+        System.out.println("[WAIT] Ждём, что низ страницы сместится (появится новый контент)");
+
+        try {
+            // Ждём, пока условие "достигнут низ страницы" перестанет быть верным
+            wait.until(d -> !hasReachedBottomOfPage(js));
+            System.out.println("[WAIT] Страница удлинилась, низ сместился");
+            return false; // уже НЕ внизу
+        } catch (TimeoutException e) {
+            System.out.println("[WAIT] Низ страницы не сместился за отведённое время");
+            return true; // всё ещё внизу
+        }
     }
 }
