@@ -102,6 +102,15 @@ public interface XpathProperties extends Config {
     String ymCardsOnAllPagesXpath();
 
     /**
+     * Возвращает XPath локатор для поиска карточки товара по индексу
+     *
+     * @return XPath для карточки товара по индексу
+     * @author Сергей Лужин
+     */
+    @Config.Key("ym.card.on.page.by.index")
+    String ymCardOnPageByIndexXpath();
+
+    /**
      * Возвращает XPath локатор заголовков карточек товаров на странице.
      *
      * @return XPath для элементов, содержащих названия товаров

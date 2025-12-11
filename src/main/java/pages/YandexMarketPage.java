@@ -2,9 +2,9 @@ package pages;
 
 import entity.Product;
 import helpers.Driver;
-import helpers.PageOffsetLocator;
 import org.openqa.selenium.*;
 import org.openqa.selenium.interactions.Actions;
+import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.util.ArrayList;
@@ -182,13 +182,6 @@ public class YandexMarketPage {
             );
 
             brandFilterElement.click();
-
-            //Ожидаем прогрузки новых товаров
-            try {
-                Thread.sleep(testProperties.explicitWaitTimeoutMs());
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
         }
     }
 
@@ -202,28 +195,34 @@ public class YandexMarketPage {
     public void scrollToBottomAndCollectAllProducts() {
         JavascriptExecutor js = (JavascriptExecutor) driver;
 
-        int doubledPositionsCount = 0;
-        int trueCurrentIndex = 0;
+        int unacceptedPositionsCount = 0;
+        int trueCurrentIndex;
 
         while (true) {
-            List<WebElement> productElemnets =
+            trueCurrentIndex = productsOnPage.size() + unacceptedPositionsCount;
+
+            List<WebElement> productElements =
                     driver.findElements(By.xpath(xpathProperties.ymCardsOnAllPagesXpath()));
 
-            trueCurrentIndex = productsOnPage.size() + doubledPositionsCount;
 
-            if (trueCurrentIndex < productElemnets.size()) {
+            if (trueCurrentIndex < productElements.size()) {
                 new Actions(driver)
-                        .moveToElement(productElemnets.get(trueCurrentIndex))
+                        .moveToElement(productElements.get(trueCurrentIndex))
                         .perform();
 
                 System.out.println("Пробуем добавить товар под индексом: " + trueCurrentIndex);
-                boolean isAdded = Product.saveProductFromElement(productElemnets.get(trueCurrentIndex), this);
+
+                WebElement currentElement = wait.until(ExpectedConditions.refreshed(
+                        visibilityOfElementLocated(
+                                By.xpath(xpathProperties.ymCardOnPageByIndexXpath().
+                                        replace("*index*", Integer.toString(trueCurrentIndex + 1))))
+                ));
+
+                boolean isAdded = Product.saveProductFromElement(currentElement, this);
                 System.out.println("На данный момент было добавлено: " + productsOnPage.size() + " товаров");
 
                 if (!isAdded) {
-                    doubledPositionsCount++;
-                    System.out.println("НАЙДЕНА ДУБЛИРОВАННА ПОЗИЦИЯ." +
-                            "Общее количество дублированных позиций: " + doubledPositionsCount);
+                    unacceptedPositionsCount++;
                 }
             }
             else {
@@ -256,22 +255,15 @@ public class YandexMarketPage {
      * @author Сергей Лужин
      */
     public String getProductCardTitle(WebElement element){
-        WebDriverWait wait = new WebDriverWait(
-                driver,
-                testProperties.defaultTimeout()
-        );
-
         try {
             return wait.until(d -> {
                 WebElement titleElement =
                         element.findElement(By.xpath(xpathProperties.ymCardTitleAddonXpath()));
 
                 String text = titleElement.getText().trim();
-                // если текст пустой — возвращаем null, WebDriverWait продолжит ждать
                 return text.isEmpty() ? null : text;
             });
         } catch (TimeoutException e) {
-            System.out.println("[WAIT] Заголовок товара не стал непустым за отведённое время");
             return "";
         }
     }
@@ -286,11 +278,6 @@ public class YandexMarketPage {
      * @author Сергей Лужин
      */
     public int getProductCardPrice(WebElement element) {
-        WebDriverWait wait = new WebDriverWait(
-                driver,
-                testProperties.defaultTimeout()
-        );
-
         try {
             return wait.until(d -> {
                 WebElement titleElement =
@@ -308,7 +295,6 @@ public class YandexMarketPage {
                 }
             });
         } catch (TimeoutException e) {
-            System.out.println("[WAIT] Цена товара не стала непустой за отведённое время");
             return 0;
         }
 
