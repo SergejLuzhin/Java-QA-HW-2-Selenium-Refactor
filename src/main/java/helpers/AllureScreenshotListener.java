@@ -24,7 +24,7 @@ public class AllureScreenshotListener extends AbstractWebDriverEventListener {
      */
     @Override
     public void afterClickOn(WebElement element, WebDriver driver) {
-        attachScreenshot("Клик");
+        attachScreenshot("Клик по элементу");
     }
 
     /**
@@ -40,12 +40,6 @@ public class AllureScreenshotListener extends AbstractWebDriverEventListener {
     public void afterChangeValueOf(WebElement element, WebDriver driver, CharSequence[] keys) {
         attachScreenshot(String.format("Набор текста: %s", (Object) keys));
     }
-
-    // Поиск элемента
-   /* @Override
-    public void afterFindBy(By by, WebElement element, WebDriver driver) {
-        attachScreenshot("После поиска по: " + by.toString(), driver);
-    }*/
 
     /**
      * Вызывается после перехода по указанному URL.

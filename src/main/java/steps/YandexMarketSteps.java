@@ -5,10 +5,7 @@ import helpers.Driver;
 import helpers.SoftChecker;
 import io.qameta.allure.Step;
 import org.junit.jupiter.api.Assertions;
-import org.openqa.selenium.WebElement;
 import pages.YandexMarketPage;
-
-
 import java.util.ArrayList;
 import java.util.List;
 

@@ -3,6 +3,7 @@ package helpers;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.support.ui.FluentWait;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import static helpers.Properties.testProperties;
@@ -35,22 +36,41 @@ public class PageOffsetLocator {
         return  (currentBottom >= pageHeight - 50);
     }
 
-    public static boolean isStillAtBottomAfterWait(JavascriptExecutor js, WebDriver driver) {
+    /**
+     * Проверяет, что страница все еще находится вниз, после ожидания прогрузки
+     *
+     * @param js экземпляр {@link JavascriptExecutor}, через который выполняются JS-выражения в браузере
+     * @param driver экземпляр {@link WebDriver}, на котором выставляется ожидание
+     *
+     * @return {true}, если нижняя граница видимой области приблизилась к концу страницы, иначе {false}
+     *
+     *
+     * @author Сергей Лужин
+     */
+    public static boolean isStillAtBottomAfterWait_OLD(JavascriptExecutor js, WebDriver driver) {
         WebDriverWait wait = new WebDriverWait(
                 driver,
                 testProperties.defaultTimeout()
         );
 
-        System.out.println("[WAIT] Ждём, что низ страницы сместится (появится новый контент)");
-
         try {
-            // Ждём, пока условие "достигнут низ страницы" перестанет быть верным
             wait.until(d -> !hasReachedBottomOfPage(js));
-            System.out.println("[WAIT] Страница удлинилась, низ сместился");
-            return false; // уже НЕ внизу
+            return false; // страница прогрузилась еще
         } catch (TimeoutException e) {
-            System.out.println("[WAIT] Низ страницы не сместился за отведённое время");
-            return true; // всё ещё внизу
+            return true; // не прогрузилась, до сих пор внизу
         }
+    }
+
+    public static boolean isStillAtBottomAfterWait(JavascriptExecutor js, FluentWait<WebDriver> fluentWait) {
+        boolean isStillAtBottom = true;
+
+        isStillAtBottom = fluentWait.until(d -> {
+            if (!hasReachedBottomOfPage(js)) {
+                return false; // страница прогрузилась → выходим
+            }
+            return hasReachedBottomOfPage(js) ? null : false;
+        });
+
+        return isStillAtBottom;
     }
 }

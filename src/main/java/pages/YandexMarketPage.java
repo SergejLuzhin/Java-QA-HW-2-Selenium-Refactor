@@ -5,14 +5,15 @@ import helpers.Driver;
 import org.openqa.selenium.*;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.FluentWait;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
 import static org.openqa.selenium.Keys.ENTER;
 import static org.openqa.selenium.support.ui.ExpectedConditions.visibilityOfElementLocated;
-
 import static helpers.Properties.testProperties;
 import static helpers.Properties.xpathProperties;
 import static helpers.PageOffsetLocator.*;
@@ -21,7 +22,7 @@ import static helpers.PageOffsetLocator.*;
  * Page Object для работы со страницами Яндекс Маркета.
  * Инкапсулирует общие элементы и действия: поиск, работа с каталогом,
  * фильтрами и карточками товаров.
- *
+ * <p>
  * Использует WebDriver, получаемый из {@link Driver#getWebDriver()}.
  *
  * @author Сергей Лужин
@@ -56,16 +57,23 @@ public class YandexMarketPage {
 
     protected WebDriverWait wait;
 
+    protected FluentWait<WebDriver> fluentWait;
+
     /**
      * Конструктор инициализирует элементы страницы,
      * ожидая появления ключевых элементов поиска и каталога.
-     *
      *
      * @author Сергей Лужин
      */
     public YandexMarketPage() {
         this.driver = Driver.getWebDriver();
         this.wait = new WebDriverWait(driver, testProperties.defaultTimeout());
+
+        this.fluentWait = new FluentWait<>(driver)
+                .withTimeout(Duration.ofSeconds(testProperties.defaultTimeout()))
+                .ignoring(StaleElementReferenceException.class)
+                .ignoring(TimeoutException.class);
+
 
         this.searchInput = driver.findElement(By.xpath(xpathProperties.ymSearchInputXpath()));
 
@@ -80,7 +88,6 @@ public class YandexMarketPage {
      * Выполняет поиск товара по текстовому запросу.
      *
      * @param query строка запроса для поиска
-     *
      * @author Сергей Лужин
      */
     public void findViaSearchInput(String query) {
@@ -103,25 +110,22 @@ public class YandexMarketPage {
      * Наводит курсор на категорию каталога.
      *
      * @param category название категории
-     *
      * @author Сергей Лужин
      */
     public void hoverOnCategoryInCatalog(String category) {
         String xpath = xpathProperties.ymCatalogCategoryXpath().replace("*category*", category);
 
         WebElement categoryElement = wait.until(
-                visibilityOfElementLocated(By.xpath(xpath))
+                ExpectedConditions.elementToBeClickable(By.xpath(xpath))
         );
 
-        Actions actions = new Actions(driver);
-        actions.moveToElement(categoryElement).perform();
+        new Actions(driver).moveToElement(categoryElement).perform();
     }
 
     /**
      * Кликает по подкатегории каталога.
      *
      * @param subcategory название подкатегории
-     *
      * @author Сергей Лужин
      */
     public void clickOnSubcategoryInCatalog(String subcategory) {
@@ -170,7 +174,6 @@ public class YandexMarketPage {
      * Устанавливает фильтры брендов, кликая по каждому бренду в списке.
      *
      * @param brands список брендов для фильтрации
-     *
      * @author Сергей Лужин
      */
     public void clickBrandCheckbox(List<String> brands) {
@@ -189,7 +192,6 @@ public class YandexMarketPage {
      * Последовательно прокручивает страницу вниз и собирает все товары,
      * добавляя их в список {@code productsOnPage}, пока не будет достигнут конец страницы.
      *
-     *
      * @author Сергей Лужин
      */
     public void scrollToBottomAndCollectAllProducts() {
@@ -204,13 +206,10 @@ public class YandexMarketPage {
             List<WebElement> productElements =
                     driver.findElements(By.xpath(xpathProperties.ymCardsOnAllPagesXpath()));
 
-
             if (trueCurrentIndex < productElements.size()) {
                 new Actions(driver)
                         .moveToElement(productElements.get(trueCurrentIndex))
                         .perform();
-
-                System.out.println("Пробуем добавить товар под индексом: " + trueCurrentIndex);
 
                 WebElement currentElement = wait.until(ExpectedConditions.refreshed(
                         visibilityOfElementLocated(
@@ -219,28 +218,18 @@ public class YandexMarketPage {
                 ));
 
                 boolean isAdded = Product.saveProductFromElement(currentElement, this);
+
                 System.out.println("На данный момент было добавлено: " + productsOnPage.size() + " товаров");
 
-                if (!isAdded) {
-                    unacceptedPositionsCount++;
-                }
-            }
-            else {
+                if (!isAdded) unacceptedPositionsCount++;
+            } else {
                 js.executeScript("window.scrollBy(0, arguments[0]);", 500);
             }
 
             if (hasReachedBottomOfPage(js)) {
-                System.out.println("Пытаемся завершить скроллинг, так как был достигнут конец страницы");
-
-                boolean stillAtBottom = isStillAtBottomAfterWait(js, driver);
-
-                if (stillAtBottom) {
-                    System.out.println("Подождали, страница больше не прогрузилась. ЗАВЕРШАЕМ");
+                if (isStillAtBottomAfterWait(js, fluentWait)) {
                     System.out.println("Финальное количество добавленных товаров: " + productsOnPage.size());
                     break;
-                }
-                else {
-                    System.out.println("Подождали, страница прогрузилась еще. ПРОДОЛЖАЕМ");
                 }
             }
         }
@@ -251,10 +240,9 @@ public class YandexMarketPage {
      *
      * @param element веб-элемент карточки товара
      * @return название товара
-     *
      * @author Сергей Лужин
      */
-    public String getProductCardTitle(WebElement element){
+   /* public String getProductCardTitle_OLD(WebElement element) {
         try {
             return wait.until(d -> {
                 WebElement titleElement =
@@ -266,6 +254,20 @@ public class YandexMarketPage {
         } catch (TimeoutException e) {
             return "";
         }
+    }*/
+
+    public String getProductCardTitle(WebElement element) {
+        String title = "";
+
+        title = fluentWait.until(d -> {
+            WebElement titleElement =
+                    element.findElement(By.xpath(xpathProperties.ymCardTitleAddonXpath()));
+
+            String text = titleElement.getText().trim();
+            return text.isEmpty() ? null : text; // null -> FluentWait продолжает ждать
+        });
+
+        return title;
     }
 
     /**
@@ -274,10 +276,9 @@ public class YandexMarketPage {
      *
      * @param element веб-элемент карточки товара
      * @return цена товара в виде целого числа
-     *
      * @author Сергей Лужин
      */
-    public int getProductCardPrice(WebElement element) {
+    /*public int getProductCardPrice_OLD(WebElement element) {
         try {
             return wait.until(d -> {
                 WebElement titleElement =
@@ -285,10 +286,9 @@ public class YandexMarketPage {
 
                 String text = titleElement.getText();
 
-                if (text.isEmpty()){
+                if (text.isEmpty()) {
                     return null;
-                }
-                else {
+                } else {
                     return Integer.parseInt(text
                             .replaceAll("[\\s\\u00A0\\u2006\\u2007\\u2008\\u2009\\u200A]", "")
                             .replaceAll("[^\\d]", ""));
@@ -298,6 +298,27 @@ public class YandexMarketPage {
             return 0;
         }
 
+    }*/
+
+    public int getProductCardPrice(WebElement element) {
+        int price = 0;
+
+        price = fluentWait.until(d -> {
+            WebElement titleElement =
+                    element.findElement(By.xpath(xpathProperties.ymCardPriceAddonXpath()));
+
+            String text = titleElement.getText();
+
+            if (text.isEmpty()) {
+                return null;
+            } else {
+                return Integer.parseInt(text
+                        .replaceAll("[\\s\\u00A0\\u2006\\u2007\\u2008\\u2009\\u200A]", "")
+                        .replaceAll("[^\\d]", ""));
+            }
+        });
+
+        return  price;
     }
 }
 

@@ -27,36 +27,6 @@ public interface TestProperties extends Config {
     int defaultTimeout();
 
     /**
-     * Возвращает значение явного ожидания,
-     * используемого в тестах (в миллисекундах).
-     *
-     * @return время явного ожидания
-     * @author Сергей Лужин
-     */
-    @Config.Key("explicit.wait.timeout.ms")
-    int explicitWaitTimeoutMs();
-
-    /**
-     * Возвращает значение задержки между скроллами,
-     * используемой в тестах (в миллисекундах).
-     *
-     * @return задержка между скроллами
-     * @author Сергей Лужин
-     */
-    @Config.Key("scroll.timeout.ms")
-    int scrollTimeoutMs();
-
-    /**
-     * Возвращает значение задержки на ожидание прогрузки страницы,
-     * используемой в тестах (в миллисекундах).
-     *
-     * @return задержка на ожидание прогрузки страницы
-     * @author Сергей Лужин
-     */
-    @Config.Key("page.update.timeout.ms")
-    int pageUpdateTimeoutMs();
-
-    /**
      * Возвращает URL главной страницы Яндекс Маркета.
      *
      * @return строка с URL Яндекс Маркета
