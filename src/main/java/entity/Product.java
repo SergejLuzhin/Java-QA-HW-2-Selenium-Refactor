@@ -65,7 +65,7 @@ public class Product {
      * @param ymPage         страница Яндекс Маркета, содержащая методы для чтения данных товара и хранящая список товаров на ней
      * @author Сергей Лужин
      */
-    public static boolean saveProductFromElement(WebElement productElement, YandexMarketPage ymPage) {
+    public static void saveProductFromElement(WebElement productElement, YandexMarketPage ymPage) {
         String productTitle = ymPage.getProductCardTitle(productElement);
         int productPrice = ymPage.getProductCardPrice(productElement);
 
@@ -73,14 +73,8 @@ public class Product {
 
         attachScreenshot(candidate.toString());
 
-        if (!ymPage.productsOnPage.contains(candidate) && !productTitle.isEmpty() && productPrice != 0) {
-            ymPage.productsOnPage.add(candidate);
-            System.out.println("Добавили: " + candidate.getTitle());
-            return true;
-        } else {
-            System.out.println("Не добавили: " + candidate.getTitle());
-            return false;
-        }
+        ymPage.productsOnPage.add(candidate);
+        System.out.println("Добавили: " + candidate.getTitle());
     }
 
     /**

@@ -102,24 +102,6 @@ public interface XpathProperties extends Config {
     String ymCardsOnAllPagesXpath();
 
     /**
-     * Возвращает XPath локатор для поиска карточки товара по индексу
-     *
-     * @return XPath для карточки товара по индексу
-     * @author Сергей Лужин
-     */
-    @Config.Key("ym.card.on.page.by.index")
-    String ymCardOnPageByIndexXpath();
-
-    /**
-     * Возвращает XPath локатор заголовков карточек товаров на странице.
-     *
-     * @return XPath для элементов, содержащих названия товаров
-     * @author Сергей Лужин
-     */
-    @Config.Key("ym.card.titles")
-    String ymCardTitlesXpath();
-
-    /**
      * Возвращает дополнительный XPath для поиска заголовка карточки товара.
      * Использоваться для поиска вложенного элемента внутри карточки.
      *
@@ -138,4 +120,7 @@ public interface XpathProperties extends Config {
      */
     @Config.Key("ym.card.price.addon")
     String ymCardPriceAddonXpath();
+
+    @Config.Key("ym.card.href.addon")
+    String ymCardHrefAddonXpath();
 }

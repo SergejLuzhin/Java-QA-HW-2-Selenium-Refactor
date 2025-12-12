@@ -204,23 +204,26 @@ public class YandexMarketPage {
 
         int unacceptedPositionsCount = 0;
         int trueCurrentIndex;
+        int currentIndex;
 
         while (true) {
-            trueCurrentIndex = productsOnPage.size() + unacceptedPositionsCount;
+            //trueCurrentIndex = productsOnPage.size() + unacceptedPositionsCount;
+
+            currentIndex = productsOnPage.size();
 
             List<WebElement> productElements =
                     driver.findElements(By.xpath(xpathProperties.ymCardsOnAllPagesXpath()));
 
-            if (trueCurrentIndex < productElements.size()) {
+            if (currentIndex < productElements.size()) {
                 new Actions(driver)
-                        .moveToElement(productElements.get(trueCurrentIndex))
+                        .moveToElement(productElements.get(currentIndex))
                         .perform();
 
-                boolean isAdded = Product.saveProductFromElement(productElements.get(trueCurrentIndex), this);
+                Product.saveProductFromElement(productElements.get(currentIndex), this);
 
                 System.out.println("На данный момент было добавлено: " + productsOnPage.size() + " товаров");
 
-                if (!isAdded) unacceptedPositionsCount++;
+                //if (!isAdded) unacceptedPositionsCount++;
             } else {
                 long end = System.currentTimeMillis() + testProperties.defaultTimeout();
                 boolean hasUpdated = false;
@@ -229,7 +232,7 @@ public class YandexMarketPage {
                     productElements =
                             driver.findElements(By.xpath(xpathProperties.ymCardsOnAllPagesXpath()));
 
-                    if (productElements.size() > trueCurrentIndex) {
+                    if (productElements.size() > currentIndex) {
                         hasUpdated = true;
                         break;
                     }
@@ -258,6 +261,12 @@ public class YandexMarketPage {
      */
     public String getProductCardTitle(WebElement element) {
         String title = "ДЕФЕКТНАЯ КАРТОЧКА ТОВАРА";
+
+        WebElement hrefElement = element.findElement(By.xpath(xpathProperties.ymCardHrefAddonXpath()));
+
+        if (hrefElement.getAttribute("href").isEmpty()) {
+            return title;
+        }
 
         WebElement titleElement =
                 element.findElement(By.xpath(xpathProperties.ymCardTitleAddonXpath()));
@@ -296,6 +305,12 @@ public class YandexMarketPage {
      */
     public int getProductCardPrice(WebElement element) {
         int price = 0;
+
+        WebElement hrefElement = element.findElement(By.xpath(xpathProperties.ymCardHrefAddonXpath()));
+
+        if (hrefElement.getAttribute("href").isEmpty()) {
+            return price;
+        }
 
         WebElement priceElement =
                 element.findElement(By.xpath(xpathProperties.ymCardPriceAddonXpath()));
