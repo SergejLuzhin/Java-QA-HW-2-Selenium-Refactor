@@ -64,9 +64,9 @@ public class PageOffsetLocator {
     public static boolean isStillAtBottomAfterWait(JavascriptExecutor js, FluentWait<WebDriver> fluentWait) {
         boolean isStillAtBottom = true;
 
-        isStillAtBottom = fluentWait.until(d -> {
+        fluentWait.until(d -> {
             if (!hasReachedBottomOfPage(js)) {
-                return false; // страница прогрузилась → выходим
+                return false; // страница прогрузилась - выходим
             }
             return hasReachedBottomOfPage(js) ? null : false;
         });
