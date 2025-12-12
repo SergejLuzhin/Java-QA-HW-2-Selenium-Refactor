@@ -61,7 +61,7 @@ public class PageOffsetLocator {
         }
     }
 
-    public static boolean isStillAtBottomAfterWait(JavascriptExecutor js, FluentWait<WebDriver> fluentWait) {
+    public static boolean isStillAtBottomAfterWait_OLD2(JavascriptExecutor js, FluentWait<WebDriver> fluentWait) {
         boolean isStillAtBottom = true;
 
         fluentWait.until(d -> {
@@ -70,6 +70,26 @@ public class PageOffsetLocator {
             }
             return hasReachedBottomOfPage(js) ? null : false;
         });
+
+        return isStillAtBottom;
+    }
+
+    public static boolean isStillAtBottomAfterWait(JavascriptExecutor js, FluentWait<WebDriver> fluentWait) {
+        boolean isStillAtBottom = true;
+
+        long end = System.currentTimeMillis() + testProperties.defaultTimeout();
+
+        while (System.currentTimeMillis() < end) {
+            if (!hasReachedBottomOfPage(js)) {
+                isStillAtBottom = false;
+                break;
+            }
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
 
         return isStillAtBottom;
     }

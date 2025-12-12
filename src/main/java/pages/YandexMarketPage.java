@@ -185,6 +185,11 @@ public class YandexMarketPage {
             );
 
             brandFilterElement.click();
+
+            List<WebElement> productElements =
+                    driver.findElements(By.xpath(xpathProperties.ymCardsOnAllPagesXpath()));
+
+            fluentWait.until(ExpectedConditions.stalenessOf(productElements.get(0)));
         }
     }
 
@@ -211,23 +216,32 @@ public class YandexMarketPage {
                         .moveToElement(productElements.get(trueCurrentIndex))
                         .perform();
 
-                WebElement currentElement = wait.until(ExpectedConditions.refreshed(
-                        visibilityOfElementLocated(
-                                By.xpath(xpathProperties.ymCardOnPageByIndexXpath().
-                                        replace("*index*", Integer.toString(trueCurrentIndex + 1))))
-                ));
-
-                boolean isAdded = Product.saveProductFromElement(currentElement, this);
+                boolean isAdded = Product.saveProductFromElement(productElements.get(trueCurrentIndex), this);
 
                 System.out.println("На данный момент было добавлено: " + productsOnPage.size() + " товаров");
 
                 if (!isAdded) unacceptedPositionsCount++;
             } else {
-                js.executeScript("window.scrollBy(0, arguments[0]);", 500);
-            }
+                long end = System.currentTimeMillis() + testProperties.defaultTimeout();
+                boolean hasUpdated = false;
 
-            if (hasReachedBottomOfPage(js)) {
-                if (isStillAtBottomAfterWait(js, fluentWait)) {
+                while (System.currentTimeMillis() < end) {
+                    productElements =
+                            driver.findElements(By.xpath(xpathProperties.ymCardsOnAllPagesXpath()));
+
+                    if (productElements.size() > trueCurrentIndex) {
+                        hasUpdated = true;
+                        break;
+                    }
+
+                    try {
+                        Thread.sleep(500);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+
+                if (!hasUpdated) {
                     System.out.println("Финальное количество добавленных товаров: " + productsOnPage.size());
                     break;
                 }
@@ -242,30 +256,32 @@ public class YandexMarketPage {
      * @return название товара
      * @author Сергей Лужин
      */
-   /* public String getProductCardTitle_OLD(WebElement element) {
-        try {
-            return wait.until(d -> {
-                WebElement titleElement =
-                        element.findElement(By.xpath(xpathProperties.ymCardTitleAddonXpath()));
-
-                String text = titleElement.getText().trim();
-                return text.isEmpty() ? null : text;
-            });
-        } catch (TimeoutException e) {
-            return "";
-        }
-    }*/
-
     public String getProductCardTitle(WebElement element) {
-        String title = "";
+        String title = "ДЕФЕКТНАЯ КАРТОЧКА ТОВАРА";
 
-        title = fluentWait.until(d -> {
-            WebElement titleElement =
-                    element.findElement(By.xpath(xpathProperties.ymCardTitleAddonXpath()));
+        WebElement titleElement =
+                element.findElement(By.xpath(xpathProperties.ymCardTitleAddonXpath()));
+
+        long end = System.currentTimeMillis() + testProperties.defaultTimeout();
+
+        while (System.currentTimeMillis() < end) {
+            fluentWait.until(d ->
+                    ExpectedConditions.visibilityOf(titleElement)
+            );
 
             String text = titleElement.getText().trim();
-            return text.isEmpty() ? null : text; // null -> FluentWait продолжает ждать
-        });
+
+            if (!text.isEmpty()) {
+                title = text;
+                break;
+            }
+
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
 
         return title;
     }
@@ -278,47 +294,36 @@ public class YandexMarketPage {
      * @return цена товара в виде целого числа
      * @author Сергей Лужин
      */
-    /*public int getProductCardPrice_OLD(WebElement element) {
-        try {
-            return wait.until(d -> {
-                WebElement titleElement =
-                        element.findElement(By.xpath(xpathProperties.ymCardPriceAddonXpath()));
-
-                String text = titleElement.getText();
-
-                if (text.isEmpty()) {
-                    return null;
-                } else {
-                    return Integer.parseInt(text
-                            .replaceAll("[\\s\\u00A0\\u2006\\u2007\\u2008\\u2009\\u200A]", "")
-                            .replaceAll("[^\\d]", ""));
-                }
-            });
-        } catch (TimeoutException e) {
-            return 0;
-        }
-
-    }*/
-
     public int getProductCardPrice(WebElement element) {
         int price = 0;
 
-        price = fluentWait.until(d -> {
-            WebElement titleElement =
-                    element.findElement(By.xpath(xpathProperties.ymCardPriceAddonXpath()));
+        WebElement priceElement =
+                element.findElement(By.xpath(xpathProperties.ymCardPriceAddonXpath()));
 
-            String text = titleElement.getText();
+        long end = System.currentTimeMillis() + testProperties.defaultTimeout();
 
-            if (text.isEmpty()) {
-                return null;
-            } else {
-                return Integer.parseInt(text
+        while (System.currentTimeMillis() < end) {
+            fluentWait.until(d ->
+                    ExpectedConditions.visibilityOf(priceElement)
+            );
+
+            String text = priceElement.getText().trim();
+
+            if (!text.isEmpty()) {
+                price = Integer.parseInt(text
                         .replaceAll("[\\s\\u00A0\\u2006\\u2007\\u2008\\u2009\\u200A]", "")
                         .replaceAll("[^\\d]", ""));
+                break;
             }
-        });
 
-        return  price;
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        return price;
     }
 }
 
