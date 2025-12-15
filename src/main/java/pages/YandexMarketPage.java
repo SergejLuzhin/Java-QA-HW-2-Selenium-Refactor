@@ -12,17 +12,16 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.openqa.selenium.Keys.ENTER;
+import static org.openqa.selenium.Keys.*;
 import static org.openqa.selenium.support.ui.ExpectedConditions.visibilityOfElementLocated;
 import static helpers.Properties.testProperties;
 import static helpers.Properties.xpathProperties;
-import static helpers.PageOffsetLocator.*;
 
 /**
  * Page Object для работы со страницами Яндекс Маркета.
  * Инкапсулирует общие элементы и действия: поиск, работа с каталогом,
  * фильтрами и карточками товаров.
- * <p>
+ *
  * Использует WebDriver, получаемый из {@link Driver#getWebDriver()}.
  *
  * @author Сергей Лужин
@@ -38,26 +37,26 @@ public class YandexMarketPage {
     /**
      * Экземпляр WebDriver, используемый для взаимодействия со страницей.
      */
-    protected WebDriver driver;
+    private WebDriver driver;
 
     /**
      * Веб-элемент поля ввода поискового запроса на странице Яндекс Маркета.
      */
-    protected WebElement searchInput;
+    private WebElement searchInput;
 
     /**
      * Веб-элемент кнопки запуска поиска по введённому запросу.
      */
-    protected WebElement searchButton;
+    private WebElement searchButton;
 
     /**
      * Веб-элемент кнопки запуска поиска по введённому запросу.
      */
-    protected WebElement catalogButton;
+    private WebElement catalogButton;
 
-    protected WebDriverWait wait;
+    private WebDriverWait wait;
 
-    protected FluentWait<WebDriver> fluentWait;
+    private FluentWait<WebDriver> fluentWait;
 
     /**
      * Конструктор инициализирует элементы страницы,
@@ -91,7 +90,7 @@ public class YandexMarketPage {
      * @author Сергей Лужин
      */
     public void findViaSearchInput(String query) {
-        searchInput = Driver.getWebDriver().findElement(By.xpath(xpathProperties.ymSearchInputXpath()));
+        searchInput = driver.findElement(By.xpath(xpathProperties.ymSearchInputXpath()));
         searchInput.sendKeys(query);
         searchInput.sendKeys(ENTER);
     }
@@ -184,12 +183,12 @@ public class YandexMarketPage {
                     visibilityOfElementLocated(By.xpath(xpath))
             );
 
-            brandFilterElement.click();
-
-            List<WebElement> productElements =
+            List<WebElement> oldProductElements =
                     driver.findElements(By.xpath(xpathProperties.ymCardsOnAllPagesXpath()));
 
-            fluentWait.until(ExpectedConditions.stalenessOf(productElements.get(0)));
+            brandFilterElement.click();
+
+            fluentWait.until(ExpectedConditions.stalenessOf(oldProductElements.get(0)));
         }
     }
 
@@ -200,39 +199,42 @@ public class YandexMarketPage {
      * @author Сергей Лужин
      */
     public void scrollToBottomAndCollectAllProducts() {
-        JavascriptExecutor js = (JavascriptExecutor) driver;
-
-        int unacceptedPositionsCount = 0;
-        int trueCurrentIndex;
         int currentIndex;
 
         while (true) {
-            //trueCurrentIndex = productsOnPage.size() + unacceptedPositionsCount;
-
             currentIndex = productsOnPage.size();
 
-            List<WebElement> productElements =
+            List<WebElement> loadedProductElements =
                     driver.findElements(By.xpath(xpathProperties.ymCardsOnAllPagesXpath()));
 
-            if (currentIndex < productElements.size()) {
+            System.out.println("Текущее количество прогруженных элементов на странице: " + loadedProductElements.size());
+
+            if (currentIndex < loadedProductElements.size() && loadedProductElements.get(currentIndex).getRect().getHeight() > 0) {
+                System.out.println("Пытаемся проскроллить к элементу с индексом " + currentIndex);
                 new Actions(driver)
-                        .moveToElement(productElements.get(currentIndex))
+                        .moveToElement(loadedProductElements.get(currentIndex))
                         .perform();
 
-                Product.saveProductFromElement(productElements.get(currentIndex), this);
-
+                Product.saveProductFromElement(loadedProductElements.get(currentIndex), this);
                 System.out.println("На данный момент было добавлено: " + productsOnPage.size() + " товаров");
 
-                //if (!isAdded) unacceptedPositionsCount++;
+                //loadedProductElements.get(currentIndex).sendKeys(Keys.END);
+                if (currentIndex != loadedProductElements.size() - 1) {
+                    new Actions(driver)
+                            .moveToElement(loadedProductElements.get(currentIndex+1))
+                            .perform();
+                }
             } else {
-                long end = System.currentTimeMillis() + testProperties.defaultTimeout();
                 boolean hasUpdated = false;
+                for (int i = 0; i < 5; i++){
+                    new Actions(driver)
+                            .sendKeys(PAGE_DOWN)
+                            .perform();
 
-                while (System.currentTimeMillis() < end) {
-                    productElements =
+                    loadedProductElements =
                             driver.findElements(By.xpath(xpathProperties.ymCardsOnAllPagesXpath()));
 
-                    if (productElements.size() > currentIndex) {
+                    if (loadedProductElements.size() > currentIndex) {
                         hasUpdated = true;
                         break;
                     }
@@ -243,12 +245,15 @@ public class YandexMarketPage {
                         throw new RuntimeException(e);
                     }
                 }
-
                 if (!hasUpdated) {
                     System.out.println("Финальное количество добавленных товаров: " + productsOnPage.size());
                     break;
                 }
+
             }
+            //new Actions(driver)
+            //       .sendKeys(PAGE_DOWN)
+            //       .perform();
         }
     }
 
@@ -271,7 +276,7 @@ public class YandexMarketPage {
         WebElement titleElement =
                 element.findElement(By.xpath(xpathProperties.ymCardTitleAddonXpath()));
 
-        long end = System.currentTimeMillis() + testProperties.defaultTimeout();
+        long end = System.currentTimeMillis() + testProperties.defaultTimeout() * 1000L;
 
         while (System.currentTimeMillis() < end) {
             fluentWait.until(d ->
@@ -315,7 +320,7 @@ public class YandexMarketPage {
         WebElement priceElement =
                 element.findElement(By.xpath(xpathProperties.ymCardPriceAddonXpath()));
 
-        long end = System.currentTimeMillis() + testProperties.defaultTimeout();
+        long end = System.currentTimeMillis() + testProperties.defaultTimeout() * 1000L;
 
         while (System.currentTimeMillis() < end) {
             fluentWait.until(d ->
@@ -327,7 +332,7 @@ public class YandexMarketPage {
             if (!text.isEmpty()) {
                 price = Integer.parseInt(text
                         .replaceAll("[\\s\\u00A0\\u2006\\u2007\\u2008\\u2009\\u200A]", "")
-                        .replaceAll("[^\\d]", ""));
+                        .replaceAll("\\D", ""));
                 break;
             }
 

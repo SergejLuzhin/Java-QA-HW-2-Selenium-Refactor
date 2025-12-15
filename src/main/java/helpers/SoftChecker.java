@@ -4,7 +4,6 @@ import io.qameta.allure.Allure;
 import io.qameta.allure.Step;
 import org.junit.jupiter.api.Assertions;
 
-
 /**
  * Утилитный класс для выполнения "мягких" проверок.
  * При провале условия добавляет отдельный шаг в Allure с сообщением,

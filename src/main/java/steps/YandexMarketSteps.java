@@ -66,6 +66,20 @@ public class YandexMarketSteps {
     }
 
     /**
+     * Проверяет, что заголовок (title) текущей страницы
+     * соответствует выбранной подкатегории каталога.
+     * Валидация выполняется через assertTrue с сообщением об ошибке.
+     *
+     * @param subcategory ожидаемое название подкатегории в заголовке страницы
+     *
+     * @author Сергей Лужин
+     */
+    @Step("Проверяем, что открытая страница сответсвует категории {subcategory}")
+    public static void checkPageTitle(String subcategory) {
+        Assertions.assertTrue(Driver.getWebDriver().getTitle().contains(subcategory), "Тайтл " + Driver.getWebDriver().getTitle() + " на сайте не соответствует категории " + subcategory);
+    }
+
+    /**
      * Получает все карточки товаров на странице,
      * скроллит страницу вниз, для прогрузки всех карточек,
      * а затем сохраняет каждый товар в сущность Product,
@@ -78,6 +92,19 @@ public class YandexMarketSteps {
     @Step("Получаем список всех карточек товаров на странице")
     public static void getAllProductCards(YandexMarketPage ymPage) {
         ymPage.scrollToBottomAndCollectAllProducts();
+    }
+
+    /**
+     * Выполняет поиск товара на Яндекс Маркете по переданному текстовому запросу.
+     *
+     * @param query поисковый запрос, по которому нужно найти товары
+     * @param ymPage      объект страницы Яндекс Маркета
+     *
+     * @author Сергей Лужин
+     */
+    @Step("Делаем поиск на Яндекс Маркете по запросу: {query}")
+    public static void goBySearchQuery(String query, YandexMarketPage ymPage) {
+        ymPage.findViaSearchInput(query);
     }
 
     /**
@@ -107,7 +134,7 @@ public class YandexMarketSteps {
                 wrongPriceProducts.add(product.toString());
             }
 
-            if (brands.stream().noneMatch(brand -> product.getTitle().toLowerCase().contains(brand.toLowerCase())) && !product.getTitle().isEmpty()) {
+            if (brands.stream().noneMatch(brand -> product.getTitle().toLowerCase().contains(brand.toLowerCase()))) {
                 wrongTitleProducts.add(product.toString());
             }
         }
@@ -139,33 +166,6 @@ public class YandexMarketSteps {
                         "Были найдены товары, которые не соответствуют брендам " + brands + ": " + wrongTitleProducts
                 )
         );
-    }
-
-    /**
-     * Выполняет поиск товара на Яндекс Маркете по переданному текстовому запросу.
-     *
-     * @param query поисковый запрос, по которому нужно найти товары
-     * @param ymPage      объект страницы Яндекс Маркета
-     *
-     * @author Сергей Лужин
-     */
-    @Step("Делаем поиск на Яндекс Маркете по запросу: {query}")
-    public static void goBySearchQuery(String query, YandexMarketPage ymPage) {
-        ymPage.findViaSearchInput(query);
-    }
-
-    /**
-     * Проверяет, что заголовок (title) текущей страницы
-     * соответствует выбранной подкатегории каталога.
-     * Валидация выполняется через assertTrue с сообщением об ошибке.
-     *
-     * @param subcategory ожидаемое название подкатегории в заголовке страницы
-     *
-     * @author Сергей Лужин
-     */
-    @Step("Проверяем, что открытая страница сответсвует категории {subcategory}")
-    public static void checkPageTitle(String subcategory) {
-        Assertions.assertTrue(Driver.getWebDriver().getTitle().contains(subcategory), "Тайтл " + Driver.getWebDriver().getTitle() + " на сайте не соответствует категории " + subcategory);
     }
 
 }

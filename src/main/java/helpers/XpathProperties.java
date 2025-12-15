@@ -111,6 +111,9 @@ public interface XpathProperties extends Config {
     @Config.Key("ym.card.title.addon")
     String ymCardTitleAddonXpath();
 
+    @Config.Key("ym.card.cart.button.addon")
+    String ymCardCartButtonAddonXpath();
+
     /**
      * Возвращает дополнительный XPath для поиска числового значения цены карточки товара.
      * Использоваться для поиска вложенного элемента внутри карточки.
@@ -121,6 +124,13 @@ public interface XpathProperties extends Config {
     @Config.Key("ym.card.price.addon")
     String ymCardPriceAddonXpath();
 
+    /**
+     * Возвращает дополнительный XPath для поиска ссылки, которую содержит карточка товара.
+     * Использоваться для поиска вложенного элемента внутри карточки.
+     *
+     * @return дополнительный XPath для элемента содержащего ссылку товара
+     * @author Сергей Лужин
+     */
     @Config.Key("ym.card.href.addon")
     String ymCardHrefAddonXpath();
 }
