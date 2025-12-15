@@ -209,21 +209,20 @@ public class YandexMarketPage {
 
             System.out.println("Текущее количество прогруженных элементов на странице: " + loadedProductElements.size());
 
-            if (currentIndex < loadedProductElements.size() && loadedProductElements.get(currentIndex).getRect().getHeight() > 0) {
+            if (currentIndex < loadedProductElements.size()) {
                 System.out.println("Пытаемся проскроллить к элементу с индексом " + currentIndex);
+                WebElement movingToElement = loadedProductElements.get(currentIndex);
+                if (!loadedProductElements.get(currentIndex).findElement(By.xpath(xpathProperties.ymCardHrefAddonXpath())).getAttribute("href").isEmpty()) {
+                    movingToElement = loadedProductElements.get(currentIndex).findElement(By.xpath(xpathProperties.ymCardCartButtonAddonXpath()));
+                }
                 new Actions(driver)
-                        .moveToElement(loadedProductElements.get(currentIndex))
+                        .sendKeys(DOWN)
+                        .moveToElement(movingToElement)
                         .perform();
 
                 Product.saveProductFromElement(loadedProductElements.get(currentIndex), this);
                 System.out.println("На данный момент было добавлено: " + productsOnPage.size() + " товаров");
 
-                //loadedProductElements.get(currentIndex).sendKeys(Keys.END);
-                if (currentIndex != loadedProductElements.size() - 1) {
-                    new Actions(driver)
-                            .moveToElement(loadedProductElements.get(currentIndex+1))
-                            .perform();
-                }
             } else {
                 boolean hasUpdated = false;
                 for (int i = 0; i < 5; i++){
@@ -245,15 +244,13 @@ public class YandexMarketPage {
                         throw new RuntimeException(e);
                     }
                 }
+                System.out.println("Обновилась страница: " + hasUpdated);
                 if (!hasUpdated) {
                     System.out.println("Финальное количество добавленных товаров: " + productsOnPage.size());
                     break;
                 }
 
             }
-            //new Actions(driver)
-            //       .sendKeys(PAGE_DOWN)
-            //       .perform();
         }
     }
 
