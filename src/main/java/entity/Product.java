@@ -74,7 +74,6 @@ public class Product {
         attachScreenshot(candidate.toString());
 
         ymPage.productsOnPage.add(candidate);
-        System.out.println("Добавили: " + candidate.getTitle());
     }
 
     /**
