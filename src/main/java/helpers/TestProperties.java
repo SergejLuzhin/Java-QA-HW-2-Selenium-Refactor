@@ -27,6 +27,16 @@ public interface TestProperties extends Config {
     int defaultTimeout();
 
     /**
+     * Возвращает значение стандартного таймаута,
+     * между циклами проверок (в милисекундах).
+     *
+     * @return таймаут между циклами
+     * @author Сергей Лужин
+     */
+    @Config.Key("default.timeout.between.updates.ms")
+    int defaultTimeoutBeetweenUpdatesMs();
+
+    /**
      * Возвращает URL главной страницы Яндекс Маркета.
      *
      * @return строка с URL Яндекс Маркета
